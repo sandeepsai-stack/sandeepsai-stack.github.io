@@ -2,6 +2,7 @@ import ScrollReveal from '@/components/ScrollReveal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
 
 const About = () => {
   const timeline = [
@@ -49,6 +50,44 @@ const About = () => {
     'Node.js', 'Express', 'MongoDB',
     'Git', 'Docker', 'AWS'
   ];
+
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const trackRef = React.useRef<HTMLDivElement>(null);
+  const thumbRef = React.useRef<HTMLDivElement>(null);
+  const [trackHeight, setTrackHeight] = React.useState(240); // px, default
+  const [isDragging, setIsDragging] = React.useState(false);
+
+  // Set track height on mount
+  React.useEffect(() => {
+    if (trackRef.current) {
+      setTrackHeight(trackRef.current.offsetHeight);
+    }
+  }, []);
+
+  // Drag logic
+  const handleThumbMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    let y = e.clientY - rect.top;
+    y = Math.max(0, Math.min(y, trackHeight));
+    const percent = y / trackHeight;
+    const idx = Math.round(percent * (timeline.length - 1));
+    setSelectedIndex(idx);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  };
 
   return (
     <div className="min-h-screen pt-20 px-4">
@@ -144,46 +183,68 @@ const About = () => {
             </h2>
           </ScrollReveal>
 
-          <div className="relative">
-            {/* Timeline line */}
-            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-border"></div>
+          <div className="relative flex">
+            {/* Timeline slider */}
+            <div className="flex flex-col items-center mr-12 relative select-none" style={{ minHeight: 300 }}>
+              <div
+                ref={trackRef}
+                className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-border -translate-x-1/2"
+                style={{ height: `${trackHeight}px` }}
+              ></div>
+              {/* Dots */}
+              {timeline.map((item, index) => {
+                const dotY = (index / (timeline.length - 1)) * trackHeight;
+                return (
+                  <button
+                    key={index}
+                    className={`w-6 h-6 rounded-full border-4 border-background z-10 transition-all duration-200 absolute left-1/2 -translate-x-1/2"
+                      ${item.type === 'work' ? 'bg-primary' : 'bg-accent'}
+                      ${selectedIndex === index ? 'ring-4 ring-primary/40 scale-110' : ''}`}
+                    style={{ top: dotY - 12 }}
+                    onClick={() => setSelectedIndex(index)}
+                    aria-label={`Show ${item.title}`}
+                    type="button"
+                  />
+                );
+              })}
+              {/* Draggable Thumb */}
+              <div
+                ref={thumbRef}
+                className={`w-8 h-8 rounded-full border-4 border-primary bg-background z-20 absolute left-1/2 -translate-x-1/2 cursor-pointer shadow-lg transition-all duration-200 ${isDragging ? 'scale-110' : ''}`}
+                style={{
+                  top: `${(selectedIndex / (timeline.length - 1)) * trackHeight - 16}px`,
+                  left: '12px',
+                  transition: isDragging ? 'none' : 'top 0.2s',
+                }}
+                onMouseDown={handleThumbMouseDown}
+                tabIndex={0}
+                aria-label="Drag to select timeline"
+              >
+                <div className="w-3 h-3 rounded-full mx-auto my-auto"></div>
+              </div>
+            </div>
 
-            <div className="space-y-12">
-              {timeline.map((item, index) => (
-                <ScrollReveal 
-                  key={index} 
-                  animation="fade-in-left"
-                  delay={index * 100}
-                >
-                  <div className="relative flex items-start">
-                    {/* Timeline dot */}
-                    <div className={`absolute left-6 w-4 h-4 rounded-full border-4 border-background z-10 ${
-                      item.type === 'work' ? 'bg-primary' : 'bg-accent'
-                    }`}></div>
-
-                    {/* Content */}
-                    <div className="ml-20">
-                      <Card className="hover-glow border-border/50 bg-card/50 backdrop-blur-sm">
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-4 mb-3">
-                            <Badge variant={item.type === 'work' ? 'default' : 'secondary'}>
-                              {item.year}
-                            </Badge>
-                            <Badge variant="outline">
-                              {item.type === 'work' ? 'Work' : 'Education'}
-                            </Badge>
-                          </div>
-                          <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-                          <p className="text-primary font-medium mb-3">{item.company}</p>
-                          <p className="text-muted-foreground leading-relaxed">
-                            {item.description}
-                          </p>
-                        </CardContent>
-                      </Card>
+            {/* Content for selected timeline item */}
+            <div className="flex-1">
+              <ScrollReveal animation="fade-in-left" key={selectedIndex}>
+                <Card className="hover-glow border-border/50 bg-card/50 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4 mb-3">
+                      <Badge variant={timeline[selectedIndex].type === 'work' ? 'default' : 'secondary'}>
+                        {timeline[selectedIndex].year}
+                      </Badge>
+                      <Badge variant="outline">
+                        {timeline[selectedIndex].type === 'work' ? 'Work' : 'Education'}
+                      </Badge>
                     </div>
-                  </div>
-                </ScrollReveal>
-              ))}
+                    <h3 className="text-xl font-semibold mb-2">{timeline[selectedIndex].title}</h3>
+                    <p className="text-primary font-medium mb-3">{timeline[selectedIndex].company}</p>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {timeline[selectedIndex].description}
+                    </p>
+                  </CardContent>
+                </Card>
+              </ScrollReveal>
             </div>
           </div>
         </div>
