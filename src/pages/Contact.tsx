@@ -1,7 +1,7 @@
 // Update this page (the content is just a fallback if you fail to update the page)
 import ScrollReveal from '@/components/ScrollReveal';
 import { Card, CardContent } from '@/components/ui/card';
-import { Mail, Phone, MapPin, Github, Linkedin, Twitter, Send } from 'lucide-react';
+import { Mail, MapPin } from 'lucide-react';
 
 const Contact = () => {
   const contactMethods = [

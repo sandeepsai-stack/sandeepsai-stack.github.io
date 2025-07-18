@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, Download, Mail } from 'lucide-react';
+import { ChevronDown, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Hero = () => {
